@@ -9,7 +9,7 @@ It has two parts:
 
 | | What it is | How to use it |
 |---|---|---|
-| **Browser tool** | A single web page that takes high-school learners through the analysis step by step | Open **https://YOUR-USERNAME.github.io/alice-raa-masterclass/**, or download `docs/index.html` and open it in any browser (works offline) |
+| **Browser tool** | A single web page that takes high-school learners through the analysis step by step | Open **https://aadam-a.github.io/alice-raa-masterclass/**, or download `docs/index.html` and open it in any browser (works offline) |
 | **Jupyter notebook** | The full analysis: centrality classes, $p_T$ spectra, $R_{AA}$, $R_{CP}$, comparison with ALICE, uncertainties, J/ψ | `ALICE_RAA_Masterclass.ipynb`, see below |
 
 ## Running the notebook
@@ -19,7 +19,7 @@ It has two parts:
    pip install -r requirements.txt
    ```
 2. Download the two data sets that are too large for this repository and put them next to the notebook:
-   - **`track_info.pkl`** (Pb–Pb tracks, 139 MB): from the [Releases page](https://github.com/YOUR-USERNAME/alice-raa-masterclass/releases) of this repository.
+   - **`track_info.pkl`** (Pb–Pb tracks, 139 MB): from the [Releases page](https://github.com/aadam-a/alice-raa-masterclass/releases) of this repository.
    - **`JpsiMasterclass/`** (J/ψ events, needed for Part C only): clone the J/ψ masterclass into this folder:
      ```
      git clone https://github.com/zwound40/JpsiMasterclass.git
