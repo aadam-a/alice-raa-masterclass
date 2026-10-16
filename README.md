@@ -9,7 +9,7 @@ It has two parts:
 
 | | What it is | How to use it |
 |---|---|---|
-| **Browser tool** | A single web page that takes high-school learners through the analysis step by step | Open **https://aadam-a.github.io/alice-raa-masterclass/**, or download `docs/index.html` and open it in any browser (works offline) |
+| **Browser tool** | A single web page that takes high-school learners through the analysis step by step | Open **https://aadam-a.github.io/alice-raa-masterclass/**, or download `index.html` and open it in any browser (works offline) |
 | **Jupyter notebook** | The full analysis: centrality classes, $p_T$ spectra, $R_{AA}$, $R_{CP}$, comparison with ALICE, uncertainties, J/ψ | `ALICE_RAA_Masterclass.ipynb`, see below |
 
 ## Running the notebook
@@ -40,7 +40,7 @@ alice-raa-masterclass/
 ├── PP_2760GeV_BaseLine.root
 ├── track_info.pkl              <- downloaded
 ├── JpsiMasterclass/            <- cloned
-└── docs/index.html             <- the browser tool
+└── index.html             <- the browser tool
 ```
 
 ## Data and credits
