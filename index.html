@@ -441,7 +441,7 @@
   </div>
 </div>
 <footer class="note">
-  Charged-particle steps (2–5) use the same real ALICE data as the Jupyter notebook (118,909 Pb–Pb collisions recorded by ALICE in 2010 at √s<sub>NN</sub> = 2.76 TeV, with 38,042,122 charged-particle tracks, and the measured 2.76 TeV pp reference spectrum with its bin-by-bin uncertainties of about 6–10%): every count, yield, R<sub>AA</sub> and R<sub>CP</sub> and its uncertainty is computed the way the notebook computes it, with ALICE’s Glauber ⟨<i>N</i><sub>coll</sub>⟩ values. These R<sub>AA</sub> and R<sub>CP</sub> values are for all charged particles together, not for one particle species. The J/ψ steps follow the manual of the official ALICE J/ψ masterclass and contain every recorded collision of its two event files (3,865 pp collisions at √<i>s</i> = 7 TeV and 2,366 p–Pb collisions); the analysis is a copy of the masterclass program’s own (masterclass.C) running in your browser. The extra R<sub>pPb</sub> step uses ⟨<i>N</i><sub>coll</sub>⟩ = 6.9 ± 0.7 and compares with ALICE’s published value (JHEP 11 (2015) 127). Masterclass samples are small, pre-selected and not corrected for detector efficiency, so the numbers illustrate the method rather than reproduce ALICE’s publications.
+  Charged-particle steps (2–5) use the same real ALICE data as the Jupyter notebook (118,909 Pb–Pb collisions recorded by ALICE in 2010 at √s<sub>NN</sub> = 2.76 TeV, with 38,042,122 charged-particle tracks, and the measured 2.76 TeV pp reference spectrum with its bin-by-bin uncertainties of about 6–10%): every count, yield, R<sub>AA</sub> and R<sub>CP</sub> and its uncertainty is computed the way the notebook computes it, with ALICE’s Glauber ⟨<i>N</i><sub>coll</sub>⟩ values. These R<sub>AA</sub> and R<sub>CP</sub> values are for all charged particles together, not for one particle species. The J/ψ steps follow the manual of the official ALICE J/ψ masterclass and contain every recorded collision of its two event files (3,865 pp collisions at √<i>s</i> = 7 TeV and 2,366 p–Pb collisions); the analysis is a copy of the masterclass program’s own (masterclass.C) running in your browser. Masterclass samples are small, pre-selected and not corrected for detector efficiency, so the numbers illustrate the method rather than reproduce ALICE’s publications.
 </footer>
 
 <script>
@@ -487,6 +487,9 @@
   const PT_LABELS = PT_EDGES.slice(0, -1).map((lo, i) => `${fmtEdge(lo)}–${fmtEdge(PT_EDGES[i + 1])}`);
   const PT_DEFAULT_BIN = PT_EDGES.indexOf(5.0);    // the 5.0-5.5 GeV/c interval
   const RCP_NBINS = PT_EDGES.indexOf(RCP_PT_MAX);   // R_CP intervals: those ending at or below RCP_PT_MAX
+  // R_AA is also shown up to 10 GeV/c, as in the notebook: above it the 50-80% classes have only 0-19 tracks per interval
+  const RAA_PT_MAX = 10;
+  const RAA_NBINS = PT_EDGES.indexOf(RAA_PT_MAX);
   const PT_CENTERS = PT_EDGES.slice(0, -1).map((lo, i) => (lo + PT_EDGES[i + 1]) / 2);
   const PT_WIDTHS = PT_EDGES.slice(0, -1).map((lo, i) => PT_EDGES[i + 1] - lo);
   const N_BINS = PT_LABELS.length;
@@ -548,9 +551,6 @@
   // dE/dx-vs-momentum map of all tracks (40 x 48 bins: p 0-10 GeV/c, dE/dx 30-150).
   const JPSI_MASS = 3.0969; // GeV/c^2, PDG value (used only as a reference marker)
   // <N_coll> for minimum-bias (NSD) p-Pb at sqrt(s_NN) = 5.02 TeV, ALICE Glauber (PRL 110 (2013) 082302)
-  const NCOLL_PPB = 6.9, NCOLL_PPB_ERR = 0.7;
-  // ALICE inclusive J/psi R_pPb at mid-rapidity, JHEP 11 (2015) 127: 0.71 +/- 0.06 (stat) +/- 0.13 (syst)
-  const ALICE_RPPB = 0.71, ALICE_RPPB_ERR = Math.hypot(0.06, 0.13);
   /* ============================== TINY SVG CHART LIB ============================== */
   const SVG_NS = 'http://www.w3.org/2000/svg';
   function el(tag, attrs) {
@@ -844,7 +844,6 @@
     jpsiLast: {},
     jpsiLog: [],
     jpsiMsg: '',
-    jpsiRppbWin: { m1: '2.8', m2: '3.2' },
     massRange: 'jpsi',     // mass plots: 'jpsi' (1.5-4.5 GeV/c^2) or 'full' (0-6)
     massCuts: 'mine'       // mass plots: 'mine' (the cuts in use), 'dedx' (dE/dx cut only) or 'none' (no track cuts)
   };
@@ -868,7 +867,6 @@
     { key: 'jpsi-pid', label: 'J/ψ 2 · Find the electrons', render: renderJpsiPid },
     { key: 'jpsi-mass', label: 'J/ψ 3 · Invariant mass', render: renderJpsiMass },
     { key: 'jpsi-quick', label: 'J/ψ 4 · Quick Analysis', render: renderJpsiQuick },
-    { key: 'jpsi-rppb', label: 'J/ψ R<sub>pPb</sub> (extra)', render: renderJpsiRppb },
     { key: 'recap', label: 'Recap', render: renderRecap }
   ];
 
@@ -1751,7 +1749,7 @@
     panelEl.appendChild(bodyHtml(`<p class="small muted">The program’s own event count (the one it writes to
       masterclass.save) is not reset by Clear Histograms or Reset, exactly as in the original, so after clearing
       it can be larger than the number of events in the histograms. The box “Events in the histograms” counts
-      only what is in them now; the R<sub>pPb</sub> page uses that one.</p>`));
+      only what is in them now.</p>`));
     const last = state.jpsiLast[r.ds];
     panelEl.appendChild(massHistograms(r, last ? [last.lo, last.hi] : null));
     panelEl.appendChild(subTitle('Extract Signals'));
@@ -1761,120 +1759,6 @@
     panelEl.appendChild(bodyHtml(`<p class="small muted">Try both datasets (switch at the top): the electron band of
       the p–Pb data sits a few dE/dx units higher than in pp — the two were recorded at different times with
       different detector calibrations — so the best cuts differ.</p>`));
-    panelEl.appendChild(navButtons(true, true));
-  }
-
-  /* ---------------- J/psi step 5: R_pPb ---------------- */
-  function renderJpsiRppb() {
-    jpsiHeader('jpsi-rppb', 'The J/ψ nuclear modification factor R<sub>pPb</sub>');
-    panelEl.appendChild(bodyHtml(`<p>The J/ψ count ${mv('S')} plays the role the charged-particle counts played
-      in the R<sub>AA</sub> step. Divide it by the number of collisions to get J/ψ per collision, and compare
-      p–Pb with pp using the same formula as ${mv('R', 'AA')}. For proton–lead it is called
-      <strong>${mv('R', 'pPb')}</strong>; ALICE’s calculation gives ${NC} = 6.9 ± 0.7 for p–Pb collisions.
-      This page uses your two analyses as they stand now — each dataset with its own cuts and histograms —
-      and the mass window below.</p>`));
-    const inp = state.jpsiRppbWin;
-    panelEl.appendChild(toolRow([
-      numField('mass window from', inp.m1, v => { inp.m1 = v; }, { unit: 'GeV/c²', step: 0.1, min: 0 }),
-      numField('to', inp.m2, v => { inp.m2 = v; }, { unit: 'GeV/c²', step: 0.1, min: 0 }),
-      toolBtn('Recalculate', () => rerender(), { primary: true })
-    ]));
-    const lo = parseFloat(inp.m1), hi = parseFloat(inp.m2);
-    if (!(hi > lo)) { panelEl.appendChild(bodyHtml('<p>Enter a valid mass window.</p>')); panelEl.appendChild(navButtons(true, true)); return; }
-    const res = {};
-    [1, 2].forEach(ds => {
-      const r = jpsiReader(ds);
-      const w = r.windowSums(lo, hi);
-      const sErr = Math.sqrt(Math.max(w.N + w.B, 0));   // var(S) = N(e-e+) + N(e-e-) + N(e+e+)
-      res[ds] = { r, w, sErr, n: r.nFilled, y: r.nFilled ? w.S / r.nFilled : 0, yErr: r.nFilled ? sErr / r.nFilled : 0,
-                  sg: w.S + w.B > 0 ? w.S / Math.sqrt(w.S + w.B) : 0 };
-    });
-    const ready = [1, 2].every(ds => res[ds].r.fApplyTrackCuts && res[ds].n > 0 && res[ds].sg >= 3);
-    // R_pPb needs BOTH analyses: show where each one stands, and offer to finish a missing one in one click
-    const ok = ds => res[ds].r.fApplyTrackCuts && res[ds].n > 0 && res[ds].sg >= 3;
-    const checkRows = [1, 2].map(ds => {
-      const x = res[ds];
-      const why = !x.r.fLoadTracks ? 'tracks not loaded' : !x.r.fApplyTrackCuts ? 'no track cuts applied'
-        : x.n === 0 ? 'no events filled' : x.sg < 3 ? `significance ${fmt(x.sg, 2)} is below 3` : '';
-      return `<tr${ok(ds) ? '' : ' class="sel-row"'}><td>${JPSI_DS_INFO[ds].long}</td><td>${fmtInt(x.n)}</td>
-        <td>${x.r.fApplyTrackCuts ? cutText(x.r) : '—'}</td><td>${x.n ? fmtInt(x.w.S) : '—'}</td>
-        <td>${x.n && x.w.S + x.w.B > 0 ? fmt(x.sg, 2) : '—'}</td><td>${ok(ds) ? '✓ ready' : 'missing: ' + why}</td></tr>`;
-    }).join('');
-    const chk = document.createElement('div');
-    chk.className = 'table-scroll';
-    chk.style.maxHeight = 'none';
-    chk.innerHTML = `<table class="data-table wrap"><thead><tr><th>dataset</th><th>events in histograms</th><th>track cuts</th>
-      <th>J/ψ in window</th><th>significance</th><th>status</th></tr></thead><tbody>${checkRows}</tbody></table>`;
-    panelEl.appendChild(chk);
-    if (!ready) {
-      const missing = [1, 2].filter(ds => !ok(ds));
-      const w = document.createElement('div'); w.className = 'callout warm';
-      w.innerHTML = `${mv('R', 'pPb')} compares p–Pb with pp, so it needs a clear J/ψ signal (significance of 3 or
-        more in the mass window above, with track cuts applied) in <strong>both</strong> datasets. Still missing:
-        <strong>${missing.map(ds => JPSI_DS_INFO[ds].short).join(' and ')}</strong>. Either go back to step 1, choose
-        that dataset at the top and repeat steps 1–4, or let the button below do it with the suggested cuts.`;
-      panelEl.appendChild(w);
-      panelEl.appendChild(toolRow(missing.map(ds => toolBtn(
-        `Analyse ${JPSI_DS_INFO[ds].short} now: suggested cuts, every event`, () => {
-          const r = jpsiReader(ds), sc = SUGGESTED_CUTS[ds];
-          if (r.fEnableQuickAnalysis) r.SwapQuickAnalysis();
-          if (!r.fLoadTracks) r.LoadTracks();
-          Object.assign(jpsiInputs(ds), suggestedCuts(ds));
-          r.SetPIDCutValues(+sc.p1, +sc.p2, +sc.de1, +sc.de2);
-          if (!r.fApplyTrackCuts) r.ApplyTrackCuts();
-          fillAll(r, true);
-          rerender();
-        }, { primary: true }))));
-    }
-    const R = res[1].y > 0 ? res[2].y / (NCOLL_PPB * res[1].y) : NaN;
-    const Rstat = isFinite(R) && res[2].y > 0 ? Math.abs(R) * Math.hypot(res[2].yErr / res[2].y, res[1].yErr / res[1].y) : NaN;
-    const Rncoll = isFinite(R) ? Math.abs(R) * NCOLL_PPB_ERR / NCOLL_PPB : NaN;
-    const c1 = document.createElement('div');
-    const yRow = ds => {
-      const x = res[ds], sub = ds === 1 ? 'pp' : 'pPb';
-      return `<div class="wh">${JPSI_DS_INFO[ds].long}</div>
-        <div class="wrow"><div class="wlabel">cuts: ${cutText(x.r)}</div></div>
-        ${mrow('', `${mv('S')} = ${fmtInt(x.w.N)} − ${fmtInt(x.w.B)} = ${fmtInt(x.w.S)} ± ${fmt(x.sErr, 1)} J/ψ in ${fmtInt(x.n)} collisions`)}
-        ${mrow('', `${mv('y', sub)} = ${mfrac(mv('S'), 'collisions')} = ${x.n ? `${mfrac(fmtInt(x.w.S), fmtInt(x.n))} = ${x.y.toFixed(5)} ± ${x.yErr.toFixed(5)}` : '—'}`)}`;
-    };
-    c1.innerHTML = `<div class="work">${yRow(1)}${yRow(2)}
-      <div class="wh">Nuclear modification factor</div>
-      ${mrow('', `${mv('R', 'pPb')} = ${mfrac(mv('y', 'pPb'), `${NC} × ${mv('y', 'pp')}`)} = ${isFinite(R) ? mfrac(res[2].y.toFixed(5), `${NCOLL_PPB} × ${res[1].y.toFixed(5)}`) : '—'}`)}
-      ${isFinite(R) ? mrow('', `= <strong>${fmt(R, 3)}</strong> ± ${fmt(Rstat, 3)} (stat) ± ${fmt(Rncoll, 3)} (from ${NC})`) : ''}
-    </div>`;
-    const c2 = document.createElement('div'); c2.className = 'chart-wrap';
-    const Rtot = Math.hypot(Rstat || 0, Rncoll || 0);
-    const ymaxR = Math.max(1.2, isFinite(R) ? Math.ceil((R + Rtot) * 5) / 5 + 0.2 : 1.2);
-    const pts = [];
-    if (isFinite(R)) pts.push({ points: [{ x: 0, y: R, yErr: Rtot, tip: `your analysis: R(pPb) = ${fmt(R, 3)} ± ${fmt(Rtot, 3)}` }], color: COLOR_SIGNAL, dots: true, errorBars: true, noLine: true, highlightIndex: 0 });
-    pts.push({ points: [{ x: 1, y: ALICE_RPPB, yErr: ALICE_RPPB_ERR, tip: 'ALICE published: R(pPb) = 0.71 ± 0.06 (stat) ± 0.13 (syst)' }], color: 'var(--text)', dots: true, errorBars: true, noLine: true, shape: 'square', highlightIndex: 0 });
-    c2.appendChild(buildChart({
-      width: 760, height: 440, xDomain: [-0.6, 1.6], yDomain: [0, ymaxR], xTickCount: 0, yTickCount: 6,
-      xLabel: '', yLabel: 'R<sub>pPb</sub> of J/ψ', refLineY: 1, series: pts,
-      xCategoryLabels: [{ x: 0, text: 'your analysis' }, { x: 1, text: 'ALICE, published' }]
-    }));
-    const cap = document.createElement('p'); cap.className = 'chart-caption';
-    cap.innerHTML = `Error bars: statistical and ${NC} (your analysis); statistical and systematic (ALICE)`;
-    c2.appendChild(cap);
-    panelEl.appendChild(c2);
-    const leg = document.createElement('div');
-    leg.className = 'legend';
-    leg.innerHTML = `<span><span class="swatch dot" style="background:${COLOR_SIGNAL}"></span>your analysis of the masterclass samples (uncorrected)</span>
-      <span><span class="swatch sq" style="background:var(--text)"></span>ALICE measurement, p–Pb at 5.02 TeV, mid-rapidity</span>
-      <span><span class="dash" style="color:var(--muted)"></span>R = 1: no nuclear effect</span>`;
-    panelEl.appendChild(leg);
-    panelEl.appendChild(subTitle('The calculation, step by step'));
-    panelEl.appendChild(c1);
-    const why = document.createElement('div');
-    why.className = 'callout';
-    why.innerHTML = `<strong>Why this differs from ALICE’s measurement.</strong> The method is the real one, but the
-      masterclass samples can’t give the true ${mv('R', 'pPb')}. The manual explains that the tracks are a
-      pre-selection made to ease the analysis: with every event and the usual cuts there are about 0.09 J/ψ per
-      pp collision, far above the real rate, and the pp and p–Pb samples need not have been selected the same
-      way — likely the main reason for the gap. The pp sample is also at 7 TeV instead of the p–Pb energy of
-      5.02 TeV, and nothing is corrected for detector efficiency. ALICE’s fully corrected result,
-      ${mv('R', 'pPb')} = 0.71 ± 0.06 (stat) ± 0.13 (syst), shows a moderate suppression of J/ψ in p–Pb collisions.`;
-    panelEl.appendChild(why);
     panelEl.appendChild(navButtons(true, true));
   }
 
@@ -2218,7 +2102,8 @@
     panelEl.appendChild(body2);
 
     panelEl.appendChild(centPills(state.centCentral, c => { state.centCentral = c; renderRAA(); }));
-    panelEl.appendChild(binPills(state.binIndex, i => { state.binIndex = i; renderRAA(); }));
+    if (state.binIndex >= RAA_NBINS) state.binIndex = RAA_NBINS - 1;
+    panelEl.appendChild(binPills(state.binIndex, i => { state.binIndex = i; renderRAA(); }, RAA_NBINS));
 
     const cent = state.centCentral, i = state.binIndex;
     const calc = computeRAABin(cent, i);
@@ -2278,8 +2163,8 @@
 
   function overlayChart(kind, selCent, selBin, onPick) {
     const classes = kind === 'raa' ? CENT_ORDER : RCP_CLASSES;
-    const nBins = kind === 'raa' ? PT_CENTERS.length : RCP_NBINS;
-    const xDom = kind === 'raa' ? PT_X_DOMAIN : [PT_X_DOMAIN[0], 11];
+    const nBins = kind === 'raa' ? RAA_NBINS : RCP_NBINS;
+    const xDom = [PT_X_DOMAIN[0], 11];   // both stop at 10 GeV/c
     const compute = kind === 'raa' ? computeRAABin : computeRCPBin;
     const color = kind === 'raa' ? COLOR_PBPB : COLOR_PERIPHERAL;
     const sym = kind === 'raa' ? mv('R', 'AA') : mv('R', 'CP');
@@ -2368,7 +2253,7 @@
     wrap.appendChild(leg);
     const cap = document.createElement('p');
     cap.className = 'chart-caption';
-    cap.innerHTML = `${kind === 'raa' ? 'All nine centrality classes, each compared with the pp reference scaled by ' + NC + '; intervals with only one Pb–Pb track are not drawn.' : 'The classes 0–5% to 40–50%, each divided by the 70–80% reference, up to 10 GeV/c.'} Click a point to select that class and ${mv('p', 'T')} interval, or a grey line to select its class; the pills above do the same.${clipped ? ` Values above ${ymax} are drawn at the top edge.` : ''}${classes.some(c => data[c].some(p => !p)) ? ' Intervals where the reference has no tracks are left out.' : ''}`;
+    cap.innerHTML = `${kind === 'raa' ? 'All nine centrality classes, each compared with the pp reference scaled by ' + NC + ', up to 10 GeV/c; intervals with only one Pb–Pb track are not drawn.' : 'The classes 0–5% to 40–50%, each divided by the 70–80% reference, up to 10 GeV/c.'} Click a point to select that class and ${mv('p', 'T')} interval, or a grey line to select its class; the pills above do the same.${clipped ? ` Values above ${ymax} are drawn at the top edge.` : ''}${classes.some(c => data[c].some(p => !p)) ? ' Intervals where the reference has no tracks are left out.' : ''}`;
     wrap.appendChild(cap);
     return wrap;
   }
@@ -2482,8 +2367,6 @@
         collisions, picked out electrons by their energy loss and momentum, paired them up, computed invariant
         masses, subtracted the same-charge background, measured the signal and its significance, and analysed
         thousands of collisions with Quick Analysis.</li>
-        <li>Turned those J/ψ counts into a nuclear modification factor <strong>R<sub>pPb</sub></strong> with the
-        same formula as R<sub>AA</sub>, and compared it with ALICE’s published measurement.</li>
       </ul>
       <p>Every number came from real recorded ALICE data: 118,909 Pb–Pb collisions and a measured pp
       reference for the charged-particle R<sub>AA</sub> and R<sub>CP</sub>, and the ALICE J/ψ masterclass samples for the J/ψ.</p>
